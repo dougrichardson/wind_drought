@@ -1,5 +1,6 @@
 import xarray as xr
 import numpy as np
+import regionmask
 
 def get_Aus_boundary():
     """
@@ -35,3 +36,26 @@ def sel_month(ds, month):
             return ds.isel(time=ds.time.dt.month.isin(month))
         else:
             raise ValueError("Incorrect month specified.")
+
+def create_mask(gpd_df, template_ds, boundary=None, lon_name='lon', lat_name='lat'):
+    """
+    Create mask from shapefiles and a template xarray dataArray or dataset.
+    """
+    mask = regionmask.mask_3D_geopandas(
+        gpd_df,
+        template_ds[lon_name],
+        template_ds[lat_name]
+    )
+    
+    if lon_name != 'lon':
+        mask = mask.rename({lon_name: 'lon'})
+    if lat_name != 'lat':
+        mask = mask.rename({lat_name: 'lat'})
+        
+    if isinstance(boundary, list):
+        mask = mask.sel(
+            lon=slice(boundary[0], boundary[1]),
+            lat=slice(boundary[2], boundary[3])
+        )
+        
+    return mask
