@@ -59,3 +59,42 @@ def create_mask(gpd_df, template_ds, boundary=None, lon_name='lon', lat_name='la
         )
         
     return mask
+
+def load_reanalysis_wind_speed(fp):
+    """
+    Return dictionary of ERA5 and BARRA-R2 wind speeds for different scenarios
+    """
+    ws_dict = {}
+    for data_name in ["ERA5", "BARRA-R2"]:
+        if data_name == "ERA5":
+            var_name = "ws10m"
+        else:
+            var_name = "wss"
+        
+        for grid in ["NEM", "SWIS", "NWIS"]:
+            
+            if grid == "NEM":
+                
+                for scenario in ["wind_2025", "wind_2030", "wind_2040", "wind_2050"]:
+                    
+                    for subgrid in ["NEM", "SE"]:
+                        
+                        for unweight in [True, False]:
+                            
+                            fname = "grid_mean_"+var_name+"_"+data_name+"_"+grid+"_"+scenario+"_"+subgrid+"_"
+                            key = data_name+"_"+grid+"_"+subgrid+"_"+scenario+"_"
+                            
+                            if unweight:
+                                fname = fname+"unweighted"
+                                key = key+"unweighted"
+                            else:
+                                fname = fname+"weighted"
+                                key = key+"weighted"
+                            
+                            ws_dict[key] = xr.open_dataarray(fp+fname+".nc")
+            else:
+                fname = "grid_mean_"+var_name+"_"+data_name+"_"+grid
+                key = data_name+"_"+grid
+                
+                ws_dict[key] = xr.open_dataarray(fp+fname+".nc")
+    return ws_dict
