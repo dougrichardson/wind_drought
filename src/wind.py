@@ -1,4 +1,4 @@
-# Wind speed/capacity factor functions
+# Wind speed/capacity factor/drought event functions
 import xarray as xr
 import xclim as xc
 import numpy as np
