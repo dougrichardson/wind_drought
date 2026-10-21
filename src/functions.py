@@ -2,11 +2,11 @@ import xarray as xr
 import numpy as np
 import regionmask
 
-def get_Aus_boundary():
-    """
-    Returns a list of bounding coordinates for Australia.
-    """
-    return [110, 155, -10, -45]
+# def get_Aus_boundary():
+#     """
+#     Returns a list of bounding coordinates for Australia.
+#     """
+#     return [110, 155, -10, -45]
 
 def windspeed(u, v):
     """
