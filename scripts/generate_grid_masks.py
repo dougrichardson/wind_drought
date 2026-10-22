@@ -3,6 +3,7 @@
 
 # =================================
 # Generate masks for grids
+# Takes about 15 minutes on a normalbw queue, 4 CPUs, 18GB memory
 # =================================
 import numpy as np
 import geopandas
@@ -100,46 +101,56 @@ if __name__ == "__main__":
             # GeoDataFrame for NEM
             nem_gdf = geopandas.read_file(
                 "data/resource_with_indicative_REZ_boundaries_2026_gis_data.shp",
-            )
-            nem_gdf["REZ"] = nem_gdf.index
+            ).rename(columns={"index": "REZ"})
         
             for scenario in ["SC30_wind", "SC40_wind", "SC50_wind"]:
                 # exclude REZs with no capacity
                 nem_gdf = nem_gdf.loc[nem_gdf[scenario].gt(0)].copy()
+
+                # Full NEM and NEM minus QLD & TAS
+                for nem_grid in ["NEM", "SE"]: 
+                    if nem_grid == "SE":
+                        nem_gdf = nem_gdf.rename(columns={"index": "REZ"}).copy()
+                        nem_gdf = nem_gdf.loc[
+                            nem_gdf[scenario].gt(0)
+                            & ~nem_gdf["REZ"].str.startswith(("Q", "T"))
+                        ].copy()
         
-                # Prepare REZs
-                nem_gdf, nem_regions = prepare_regions(nem_gdf, name_col="REZ")
-        
-                # REZ mean wind
-                nem_by_rez = regional_wind_means(wind_da, nem_regions, orog=None)
-        
-                # Grid mean wind
-                nem_equal_mean = nem_by_rez.mean("region", skipna=True)
-        
-                # Capacity mean wind
-                capacity = xr.DataArray(
-                    nem_gdf.sort_values("_region_id")[scenario].to_numpy(),
-                    dims="region",
-                    coords={"region": nem_by_rez["region"]},
-                )
-                nem_capacity_mean = nem_by_rez.weighted(capacity).mean("region")
-        
-                # Write
-                fy = str(nem_by_rez.time.dt.year[0].values)
-                ly = str(nem_by_rez.time.dt.year[-1].values)
-                fp = dataset.lower() + "_" + variable + "_100m_" + scenario.split("_")[0] + "_" + fy + "-" + ly
-                
-                nem_by_rez.to_netcdf(
-                    WIND_PATH + dataset + "/power_grid/" + fp + "_by_rez.nc"
-                )
-                nem_equal_mean.to_netcdf(
-                    WIND_PATH + dataset + "/power_grid/" + fp + "_equal.nc"
-                )
-                nem_capacity_mean.to_netcdf(
-                    WIND_PATH + dataset + "/power_grid/" + fp + "_weighted.nc"
-                )
+                    # Prepare REZs
+                    nem_gdf, nem_regions = prepare_regions(nem_gdf, name_col="REZ")
+            
+                    # REZ mean wind
+                    nem_by_rez = regional_wind_means(wind_da, nem_regions, orog=None)
+            
+                    # Grid mean wind
+                    nem_equal_mean = nem_by_rez.mean("region", skipna=True)
+            
+                    # Capacity mean wind
+                    capacity = xr.DataArray(
+                        nem_gdf.sort_values("_region_id")[scenario].to_numpy(),
+                        dims="region",
+                        coords={"region": nem_by_rez["region"]},
+                    )
+                    nem_capacity_mean = nem_by_rez.weighted(capacity).mean("region")
+            
+                    # Write
+                    fy = str(nem_by_rez.time.dt.year[0].values)
+                    ly = str(nem_by_rez.time.dt.year[-1].values)
+                    fp = dataset.lower() + "_" + variable + "_100m_" + nem_grid + "-" + scenario.split("_")[0] + "_" + fy + "-" + ly
+                    
+                    nem_by_rez.to_netcdf(
+                        WIND_PATH + dataset + "/power_grid/" + fp + "_by_rez.nc"
+                    )
+                    nem_equal_mean.to_netcdf(
+                        WIND_PATH + dataset + "/power_grid/" + fp + "_equal.nc"
+                    )
+                    nem_capacity_mean.to_netcdf(
+                        WIND_PATH + dataset + "/power_grid/" + fp + "_weighted.nc"
+                    )
 
             # ====== SWIS & NWIS ========
+            # Because of the buffer applied to the transmission lines in the shapefile, we need to use
+            #  orography to remove ocean cells
             if dataset == "ERA5":
                 orog = xr.open_dataset(
                     "/g/data/rt52/era5/single-levels/monthly-averaged/lsm/2025/lsm_era5_moda_sfc_20250101-20250131.nc"
@@ -149,7 +160,7 @@ if __name__ == "__main__":
                     "/g/data/ob53/BARRA2/output/reanalysis/AUS-11/BOM/ERA5/historical/hres/BARRA-R2/v1/fx/orog/latest/orog_AUS-11_ERA5_historical_hres_BOM_BARRA-R2_v1.nc"
                 )["orog"]
             else:
-                raise ValueError("Incorrect dataset")
+                raise ValueError("Incorrect orography dataset specified, currently accepts 'ERA5' or 'BARRA-R2'.")
 
             # Load GeoDataFrames
             swis_gdf = geopandas.read_file(
