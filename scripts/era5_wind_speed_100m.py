@@ -5,12 +5,6 @@
 # Compute daily mean ERA5 100m wind speed
 # =================================
 
-# from dask_setup import setup_dask_client 
-
-# from pathlib import Path
-# import glob
-# from zarr.codecs import BloscCodec
-
 import xarray as xr
 import numpy as np
 

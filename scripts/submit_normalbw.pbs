@@ -1,11 +1,11 @@
 #!/bin/bash -l
 
 #PBS -P dt6
-#PBS -q normalsr
-#PBS -l ncpus=104
-#PBS -l mem=496GB
-#PBS -l jobfs=300GB
-#PBS -l walltime=03:00:00
+#PBS -q normalbw
+#PBS -l ncpus=4
+#PBS -l mem=18GB
+#PBS -l jobfs=20GB
+#PBS -l walltime=01:00:00
 #PBS -l storage=gdata/w42+gdata/ng72+gdata/xp65+gdata/gb02+gdata/rt52+gdata/ob53
 #PBS -l wd
 #PBS -o /dev/null
@@ -25,9 +25,6 @@ exec > "logs/${PBS_JOBID}.out" 2> "logs/${PBS_JOBID}.err"
 module use /g/data/xp65/public/modules
 module load conda/analysis3
 
-module use /g/data/gb02/public/modules/
-module load dask_setup
-
 : "${PYTHON_SCRIPT:?Submit with -v PYTHON_SCRIPT=path/to/script.py}"
 if [[ ! -f "$PYTHON_SCRIPT" ]]; then
     echo "Python script not found: $PYTHON_SCRIPT" >&2
@@ -36,4 +33,4 @@ fi
 
 python -u "$PYTHON_SCRIPT"
 
-# Submit with e.g.: qsub -v PYTHON_SCRIPT=scripts/era5_wind_speed_100m.py scripts/submit_script.pbs
+# Submit with e.g.: qsub -v PYTHON_SCRIPT=scripts/era5_wind_speed_100m.py scripts/submit_normalbw.pbs

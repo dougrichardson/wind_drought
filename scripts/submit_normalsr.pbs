@@ -1,0 +1,39 @@
+#!/bin/bash -l
+
+#PBS -P dt6
+#PBS -q normalsr
+#PBS -l ncpus=104
+#PBS -l mem=496GB
+#PBS -l jobfs=300GB
+#PBS -l walltime=03:00:00
+#PBS -l storage=gdata/w42+gdata/ng72+gdata/xp65+gdata/gb02+gdata/rt52+gdata/ob53
+#PBS -l wd
+#PBS -o /dev/null
+#PBS -e /dev/null
+
+set -euo pipefail
+
+cd /g/data/w42/dr6273/work/wind_drought
+
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+
+# Keep a separate pair of logs for each job.
+mkdir -p logs
+exec > "logs/${PBS_JOBID}.out" 2> "logs/${PBS_JOBID}.err"
+
+# Load the Python version used to create your environment.
+module use /g/data/xp65/public/modules
+module load conda/analysis3
+
+module use /g/data/gb02/public/modules/
+module load dask_setup
+
+: "${PYTHON_SCRIPT:?Submit with -v PYTHON_SCRIPT=path/to/script.py}"
+if [[ ! -f "$PYTHON_SCRIPT" ]]; then
+    echo "Python script not found: $PYTHON_SCRIPT" >&2
+    exit 1
+fi
+
+python -u "$PYTHON_SCRIPT"
+
+# Submit with e.g.: qsub -v PYTHON_SCRIPT=scripts/era5_wind_speed_100m.py scripts/submit_normalsr.pbs
