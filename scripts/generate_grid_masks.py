@@ -99,18 +99,18 @@ if __name__ == "__main__":
 
             # ====== NEM ========
             # GeoDataFrame for NEM
-            nem_gdf = geopandas.read_file(
+            _nem_gdf = geopandas.read_file(
                 "data/resource_with_indicative_REZ_boundaries_2026_gis_data.shp",
             ).rename(columns={"index": "REZ"})
         
             for scenario in ["SC30_wind", "SC40_wind", "SC50_wind"]:
                 # exclude REZs with no capacity
-                nem_gdf = nem_gdf.loc[nem_gdf[scenario].gt(0)].copy()
+                nem_gdf = _nem_gdf.loc[_nem_gdf[scenario].gt(0)].copy()
 
                 # Full NEM and NEM minus QLD & TAS
                 for nem_grid in ["NEM", "SE"]: 
                     if nem_grid == "SE":
-                        nem_gdf = nem_gdf.rename(columns={"index": "REZ"}).copy()
+                        # nem_gdf = nem_gdf.rename(columns={"index": "REZ"}).copy()
                         nem_gdf = nem_gdf.loc[
                             nem_gdf[scenario].gt(0)
                             & ~nem_gdf["REZ"].str.startswith(("Q", "T"))
