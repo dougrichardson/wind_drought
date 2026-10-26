@@ -32,7 +32,7 @@ def calc_wdd_timeseries(timeseries, pctl):
     ).drop_vars('event_start')
     drought_events = drought_events.swap_dims({'event': 'time'}).dropna('time')
 
-    return drought_events
+    return drought_events['event_length']
     
 def calc_wddx_timeseries(timeseries, pctl):
     """Calculate the annual max wind drought duration (WDDx) for a single timeseries"""
@@ -45,8 +45,8 @@ def calc_wddx_timeseries(timeseries, pctl):
     # drought_events = drought_events.swap_dims({'event': 'time'}).dropna('time')
     
     drought_events = calc_wdd_timeseries(timeseries, pctl)
-    wddx_da = drought_events['event_length'].resample(time='1YS').max()
-    wddx_times = drought_events['event_length'].resample(time='1YS').map(xr.DataArray.idxmax, dim='time', keep_attrs=True)
+    wddx_da = drought_events.resample(time='1YS').max()
+    wddx_times = drought_events.resample(time='1YS').map(xr.DataArray.idxmax, dim='time', keep_attrs=True)
     wddx_da['time'] = wddx_times
     wddx_ds = wddx_da.to_dataset()
 
