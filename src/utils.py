@@ -19,3 +19,12 @@ def sel_month(ds, month):
             return ds.isel(time=ds.time.dt.month.isin(month))
         else:
             raise ValueError("Incorrect month specified.")
+
+def map_leaves(obj, operation):
+    """Apply operation to each value of a dictionary and return in same structure as input"""
+    def _map(node):
+        if isinstance(node, dict):
+            return {key: _map(value) for key, value in node.items()}
+        return operation(node)
+
+    return _map(obj)
