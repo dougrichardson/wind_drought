@@ -66,3 +66,26 @@ def write_zarr(ds, path, filename, encoding, mode='w', append_dim=None):
         zarr_format=3,
         consolidated=False
     )
+
+def load_wind(dataset, variable, region, scenario=None, averaging="equal"):
+    """ Return da of wind speed data for given criteria """
+    wind_path = "/g/data/ng72/dr6273/work/projects/wind_drought/data/"+dataset+"/power_grid/"
+    directory_path = Path(wind_path)
+
+    # Filter by variable
+    matching_files = [f.name for f in directory_path.iterdir() if f.is_file() and variable in f.name]
+
+    # Filter by region
+    matching_files = [f for f in matching_files if region in f]
+
+    # Filter by scenario
+    if scenario is not None:
+        matching_files = [f for f in matching_files if scenario in f]
+
+    # Filter by averaging method
+    matching_files = [f for f in matching_files if averaging in f]
+    
+    if len(matching_files) > 1:
+        raise ValueError("Need to filter more files")
+        
+    return xr.open_dataset(wind_path + matching_files[0])
