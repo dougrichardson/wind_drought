@@ -8,6 +8,7 @@
 
 import xarray as xr
 import numpy as np
+import argparse
 
 import src.regions as regions
 import src.read as read
@@ -27,10 +28,17 @@ def barraR2_preprocess(ds):
 BARRA_R2_PATH = "/g/data/ob53/BARRA2/output/reanalysis/AUS-11/BOM/ERA5/historical/hres/BARRA-R2/v1/1hr/"
 WRITE_PATH = "/g/data/ng72/dr6273/work/projects/wind_drought/data/BARRA-R2/"
 REGION = regions.get_Aus_boundary()
-YEARS = range(1979, 2026)
+# YEARS = range(1979, 2026)
 
 if __name__ == "__main__":
     from dask_setup import setup_dask_client 
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("first_year", type=int)
+    parser.add_argument("last_year", type=int)
+    args = parser.parse_args()
+
+    YEARS = range(args.first_year, args.last_year + 1) 
     
     client, cluster, dask_tmp = setup_dask_client(mode="interactive", workload_type="cpu")   # heavy compute
 

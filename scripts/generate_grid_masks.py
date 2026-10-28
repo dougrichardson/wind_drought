@@ -9,6 +9,7 @@ import numpy as np
 import geopandas
 import xarray as xr
 import regionmask
+import argparse
 
 def prepare_regions(gdf, name_col):
     """Prepare a GeoDataFrame and regionmask Regions object."""
@@ -86,10 +87,17 @@ WIND_PATH = "/g/data/ng72/dr6273/work/projects/wind_drought/data/"
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("first_year", type=int)
+    parser.add_argument("last_year", type=int)
+    args = parser.parse_args()
+
+    YEARS = range(args.first_year, args.last_year + 1)
+
     for variable in ["wind_speed", "capacity_factor"]:
 
         for dataset in ["ERA5", "BARRA-R2"]:
-            wind_fp = dataset + "/" + dataset.lower() + "_" + variable + "_100m_1979-2025.zarr/"
+            wind_fp = dataset + "/" + dataset.lower() + "_" + variable + "_100m_"+str(YEARS[0])+"-"+str(YEARS[-1])+".zarr/"
             
             # Open wind data
             wind_da = xr.open_zarr(

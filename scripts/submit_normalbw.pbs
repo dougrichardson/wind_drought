@@ -31,6 +31,9 @@ if [[ ! -f "$PYTHON_SCRIPT" ]]; then
     exit 1
 fi
 
-python -u "$PYTHON_SCRIPT"
+: "${FIRST_YEAR:?Submit with -v FIRST_YEAR=...,LAST_YEAR=...}"
+: "${LAST_YEAR:?Submit with -v FIRST_YEAR=...,LAST_YEAR=...}"
 
-# Submit with e.g.: qsub -v PYTHON_SCRIPT=scripts/era5_wind_speed_100m.py scripts/submit_normalbw.pbs
+python -u "$PYTHON_SCRIPT" "$FIRST_YEAR" "$LAST_YEAR"
+
+# Submit with e.g.: qsub -v PYTHON_SCRIPT=scripts/era5_wind_speed_100m.py,FIRST_YEAR=1979,LAST_YEAR=2025 scripts/submit_normalbw.pbs

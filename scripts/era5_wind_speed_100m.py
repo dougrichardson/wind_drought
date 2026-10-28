@@ -7,6 +7,7 @@
 
 import xarray as xr
 import numpy as np
+import argparse
 
 import src.regions as regions
 import src.read as read
@@ -28,62 +29,20 @@ def era_preprocess(ds):
     ds["time"] = ds["time"].dt.floor("D")
     return ds
 
-# def get_files(path, var, start_year=1979, end_year=2025):
-#     """Return files for years from start_year to end_year, inclusive."""
-#     files = (
-#         Path(path) / var
-#     ).glob("*/*.nc")
-
-#     return sorted(
-#         f for f in files
-#         if f.parent.name.isdigit()
-#         and start_year <= int(f.parent.name) <= end_year
-#     )
-
-# def open_era(files):
-#     """
-#     Load and preprocess hourly data for a given year
-#     """
-#     # Open all hours in the year (~33 GB)
-#     ds = xr.open_mfdataset(
-#         files,
-#         preprocess=era_preprocess,
-#         chunks='auto',
-#         parallel=True
-#     )
-#     return ds
-
-# def specify_encoding(ds):
-#     codec = BloscCodec(cname="zstd", clevel=6, shuffle="bitshuffle")
-
-#     encoding = {}
-#     for name, da in ds.data_vars.items():
-#         chunks = tuple(da.chunksizes[dim][0] for dim in da.dims)
-#         encoding[name] = {
-#             "chunks": chunks,
-#             "compressors": codec,
-#             "dtype": "float64",
-#         }
-
-#     return encoding
-
-# def write_zarr(ds, path, filename, encoding):
-#     """ Write to zarr """
-#     ds.to_zarr(
-#         path + filename,
-#         mode='w',
-#         encoding=encoding,
-#         zarr_format=3,
-#         consolidated=False
-#     )
-
 ERA_PATH = "/g/data/rt52/era5/single-levels/reanalysis/" # hourly instantaneous
 WRITE_PATH = "/g/data/ng72/dr6273/work/projects/wind_drought/data/ERA5/"
 REGION = regions.get_Aus_boundary()
-YEARS = range(1979, 2026)
+# YEARS = range(1979, 2026)
 
 if __name__ == "__main__":
     from dask_setup import setup_dask_client 
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("first_year", type=int)
+    parser.add_argument("last_year", type=int)
+    args = parser.parse_args()
+
+    YEARS = range(args.first_year, args.last_year + 1)
     
     client, cluster, dask_tmp = setup_dask_client(mode="interactive", workload_type="cpu")   # heavy compute
 
