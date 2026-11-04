@@ -28,3 +28,20 @@ def map_leaves(obj, operation):
         return operation(node)
 
     return _map(obj)
+
+def map_leaves_pair(obj1, obj2, operation):
+    """Apply operation to each value of a dictionary, with another dictionary as the second argument,
+        and return in same structure as input"""
+    if isinstance(obj1, dict) and isinstance(obj2, dict):
+        if obj1.keys() != obj2.keys():
+            raise ValueError("The dictionaries must have matching keys")
+
+        return {
+            key: map_leaves_pair(obj1[key], obj2[key], operation)
+            for key in obj1
+        }
+
+    if isinstance(obj1, dict) or isinstance(obj2, dict):
+        raise TypeError("The dictionaries must have matching nested structures")
+
+    return operation(obj1, obj2)

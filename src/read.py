@@ -67,8 +67,9 @@ def write_zarr(ds, path, filename, encoding, mode='w', append_dim=None):
         consolidated=False
     )
 
-def load_wind(dataset, variable, region, scenario=None, averaging="equal"):
+def load_wind(dataset, variable, region, scenario=None, averaging="equal", period="1979-2025"):
     """ Return da of wind speed data for given criteria """
+    
     wind_path = "/g/data/ng72/dr6273/work/projects/wind_drought/data/"+dataset+"/power_grid/"
     directory_path = Path(wind_path)
 
@@ -84,7 +85,12 @@ def load_wind(dataset, variable, region, scenario=None, averaging="equal"):
 
     # Filter by averaging method
     matching_files = [f for f in matching_files if averaging in f]
+
+    # Filter by period
+    matching_files = [f for f in matching_files if period in f]
+    # print(matching_files)
     
+    # Check that only one option remains
     if len(matching_files) > 1:
         raise ValueError("Need to filter more files")
         
