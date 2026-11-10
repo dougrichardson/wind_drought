@@ -45,3 +45,7 @@ def map_leaves_pair(obj1, obj2, operation):
         raise TypeError("The dictionaries must have matching nested structures")
 
     return operation(obj1, obj2)
+
+def doy_anom(ds):
+    """ Day of year anomalies """
+    return ds.groupby('time.dayofyear') - ds.groupby('time.dayofyear').mean()

@@ -37,6 +37,24 @@ fi
 : "${FIRST_YEAR:?Submit with -v FIRST_YEAR=...,LAST_YEAR=...}"
 : "${LAST_YEAR:?Submit with -v FIRST_YEAR=...,LAST_YEAR=...}"
 
-python -u "$PYTHON_SCRIPT" "$FIRST_YEAR" "$LAST_YEAR"
+python_args=("$FIRST_YEAR" "$LAST_YEAR")
 
-# Submit with e.g.: qsub -v PYTHON_SCRIPT=scripts/era5_wind_speed_100m.py,FIRST_YEAR=1979,LAST_YEAR=2025 scripts/submit_normalsr.pbs
+if [[ -n "${ARG3:-}" ]]; then
+    python_args+=("$ARG3")
+fi
+
+if [[ -n "${ARG4:-}" ]]; then
+    if [[ -z "${ARG3:-}" ]]; then
+        echo "ARG4 requires ARG3" >&2
+        exit 1
+    fi
+    python_args+=("$ARG4")
+fi
+
+python -u "$PYTHON_SCRIPT" "${python_args[@]}"
+
+# Two arguments:
+# qsub -v PYTHON_SCRIPT=scripts/era5_wind_speed_100m.py,FIRST_YEAR=1979,LAST_YEAR=2025 scripts/submit_normalsr.pbs
+
+# Four arguments:
+# qsub -v PYTHON_SCRIPT=scripts/other_script.py,FIRST_YEAR=1979,LAST_YEAR=2025,ARG3=value3,ARG4=value4 scripts/submit_normalsr.pbs
