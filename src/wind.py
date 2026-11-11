@@ -2,6 +2,7 @@
 import xarray as xr
 import xclim as xc
 import numpy as np
+import pandas as pd
 
 def capacity_factor(W):
     """
@@ -36,13 +37,6 @@ def calc_wdd_timeseries(timeseries, pctl):
     
 def calc_wddx_timeseries(timeseries, pctl):
     """Calculate the annual max wind drought duration (WDDx) for a single timeseries"""
-
-    # calm_days = timeseries < pctl10
-    # drought_events = xc.indices.run_length.find_events(calm_days, window=1)
-    # drought_events = drought_events.assign_coords(
-    #     time=('event', drought_events['event_start'].data)
-    # ).drop_vars('event_start')
-    # drought_events = drought_events.swap_dims({'event': 'time'}).dropna('time')
     
     drought_events = calc_wdd_timeseries(timeseries, pctl)
     wddx_da = drought_events.resample(time='1YS').max()
@@ -51,3 +45,30 @@ def calc_wddx_timeseries(timeseries, pctl):
     wddx_ds = wddx_da.to_dataset()
 
     return wddx_ds
+
+def get_droughts(da):
+    """Return dataframe of drought duration, start date and end date"""
+    
+    years = da.time.dt.year.values
+    df = pd.DataFrame(index=years)
+    df['WDD'] = da.values.astype('int32')
+    df['start_date'] = pd.to_datetime(da.time.dt.strftime('%Y-%m-%d'))
+    df['end_date'] = pd.to_datetime(da.time.dt.strftime('%Y-%m-%d')) + pd.to_timedelta(df['WDD'] - 1, unit='D')
+    return df.set_index('start_date')
+
+def split_droughts(df, wdd_col="WDD", q1=0.95, q2=0.99):
+    """Return dict of top events and other events, as defined by quantiles"""
+    q_low, q_high = df[wdd_col].quantile([q1, q2])
+    
+    print("n events:", len(df))
+    print("low WDD thresh:", q_low, "high WDD thresh:", q_high)
+
+    top = df[df[wdd_col] >= q_high].sort_values(wdd_col, ascending=False)
+    other = df[
+        (df[wdd_col] >= q_low) & (df[wdd_col] < q_high)
+    ].sort_values(wdd_col, ascending=False)
+
+    print("n top events:", len(top), "n other events:", len(other))
+    print()
+
+    return {"top": top, "other": other}
