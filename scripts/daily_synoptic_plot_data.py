@@ -22,6 +22,9 @@ def iter_leaves(obj, key_path=()):
     else:
         yield key_path, obj
 
+def split_top(df):
+    return {"top": wind.split_droughts(df)["top"]}
+
 def event_slice(da, event_start, event_duration, days_before, days_after):
     """ Return da around event """
     time_slice = pd.date_range(
@@ -107,7 +110,7 @@ def write_sfc_plot_data(event_df, path, event_id, days_before=0, days_after=2):
     ds = xr.merge([uas, vas, mslp, tas, clt], compat="no_conflicts")
 
     path += "/sfc_barra/"
-    out_path = Path(path + "wdd_composite_" + str(event_id) + "_" + start + ".nc")
+    out_path = Path(path + "wdd_composite_" + f"{event_id:02d}" + "_" + start + ".nc")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     
     ds.to_netcdf(out_path)
@@ -140,7 +143,7 @@ def write_pl_plot_data(event_df, path, event_id, days_before=0, days_after=2):
     ds = xr.merge([t850, u850, v850, z500, z500_anom, u300], compat="no_conflicts")
 
     path += "/pl_era/"
-    out_path = Path(path + "wdd_composite_" + str(event_id) + "_" + start + ".nc")
+    out_path = Path(path + "wdd_composite_" + f"{event_id:02d}" + "_" + start + ".nc")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     
     ds.to_netcdf(out_path)
@@ -149,6 +152,7 @@ OUTPUT_ROOT = Path("/g/data/ng72/dr6273/work/projects/wind_drought/plotting/wind
 
 if __name__ == "__main__":
 
+    # =================== Wind data ===================
     # Load WDD data - for now just look at BARRA-R2, capacity factor, SC30 weighted results
     wdd_dict = {}
     for dataset in ["BARRA-R2"]:
@@ -184,9 +188,10 @@ if __name__ == "__main__":
     )
     
     # Obtain subset of longest droughts (>99th percentile) (discarding other droughts (95-99th percentile))
-    subset_dict = utils.map_leaves(events_dict, wind.split_droughts)
+    # subset_dict = utils.map_leaves(events_dict, wind.split_droughts)
+    subset_dict = utils.map_leaves(events_dict, split_top)
 
-    # Meteorological data
+    # =================== Meteorological data ===================
     # BARRA-R2
     barra_diagnostics_path = "/g/data/ng72/dr6273/work/projects/wind_drought/data/BARRA-R2/"
 
@@ -249,6 +254,7 @@ if __name__ == "__main__":
     ).drop_vars(["dayofyear", "level"])
     u300_era["time"] = u300_era["time"] + pd.Timedelta(hours=1)
 
+    # =================== Write data ===================
     # Loop through dictionary and write composite data for each event
     for key_path, leaf in iter_leaves(subset_dict):    
         df = (
@@ -262,7 +268,7 @@ if __name__ == "__main__":
         )
     
         leaf_output_dir = OUTPUT_ROOT.joinpath(*key_path)
-        leaf_output_dir.mkdir(parents=True, exist_ok=True)
+        leaf_output_dir.mkdir(parents=True, exist_ok=True) # Create directories if needed
 
         for event_id, start_date in enumerate(df.index):
             if start_date.year < 2025:
