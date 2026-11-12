@@ -5,7 +5,7 @@
 #PBS -l ncpus=4
 #PBS -l mem=18GB
 #PBS -l jobfs=20GB
-#PBS -l walltime=01:00:00
+#PBS -l walltime=03:00:00
 #PBS -l storage=gdata/w42+gdata/ng72+gdata/xp65+gdata/gb02+gdata/rt52+gdata/ob53
 #PBS -l wd
 #PBS -o /dev/null
@@ -31,9 +31,14 @@ if [[ ! -f "$PYTHON_SCRIPT" ]]; then
     exit 1
 fi
 
-: "${FIRST_YEAR:?Submit with -v FIRST_YEAR=...,LAST_YEAR=...}"
-: "${LAST_YEAR:?Submit with -v FIRST_YEAR=...,LAST_YEAR=...}"
+python_args=()
 
-python -u "$PYTHON_SCRIPT" "$FIRST_YEAR" "$LAST_YEAR"
+if [[ -n "${FIRST_YEAR:-}" || -n "${LAST_YEAR:-}" ]]; then
+    : "${FIRST_YEAR:?Provide both FIRST_YEAR and LAST_YEAR}"
+    : "${LAST_YEAR:?Provide both FIRST_YEAR and LAST_YEAR}"
+    python_args=("$FIRST_YEAR" "$LAST_YEAR")
+fi
+
+python -u "$PYTHON_SCRIPT" "${python_args[@]}"
 
 # Submit with e.g.: qsub -v PYTHON_SCRIPT=scripts/era5_wind_speed_100m.py,FIRST_YEAR=1979,LAST_YEAR=2025 scripts/submit_normalbw.pbs
