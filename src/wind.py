@@ -56,16 +56,31 @@ def get_droughts(da):
     df['end_date'] = pd.to_datetime(da.time.dt.strftime('%Y-%m-%d')) + pd.to_timedelta(df['WDD'] - 1, unit='D')
     return df.set_index('start_date')
 
-def split_droughts(df, wdd_col="WDD", q1=0.95, q2=0.99):
-    """Return dict of top events and other events, as defined by quantiles"""
-    q_low, q_high = df[wdd_col].quantile([q1, q2])
-    
-    print("n events:", len(df))
-    print("low WDD thresh:", q_low, "high WDD thresh:", q_high)
+from numbers import Integral, Real
 
-    top = df[df[wdd_col] >= q_high].sort_values(wdd_col, ascending=False)
+def split_droughts(df, wdd_col="WDD", t1=0.95, t2=0.99):
+    """Split events using quantile thresholds (floats) or absolute WDD thresholds (integers)."""
+
+    def get_threshold(value):
+        if isinstance(value, bool):
+            raise ValueError("Thresholds must be integers or quantile floats, not booleans")
+        if isinstance(value, Integral):
+            return value  # absolute WDD threshold
+        if isinstance(value, Real) and 0 <= value <= 1:
+            return df[wdd_col].quantile(value)
+        raise ValueError("Each threshold must be an integer or a float between 0 and 1")
+
+    low, high = get_threshold(t1), get_threshold(t2)
+
+    if low > high:
+        raise ValueError("t1 must resolve to a threshold less than or equal to t2")
+
+    print("n events:", len(df))
+    print("low WDD threshold:", low, "high WDD threshold:", high)
+
+    top = df[df[wdd_col] >= high].sort_values(wdd_col, ascending=False)
     other = df[
-        (df[wdd_col] >= q_low) & (df[wdd_col] < q_high)
+        (df[wdd_col] >= low) & (df[wdd_col] < high)
     ].sort_values(wdd_col, ascending=False)
 
     print("n top events:", len(top), "n other events:", len(other))
