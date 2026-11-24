@@ -1,6 +1,7 @@
 # Functions to read and process data
 from pathlib import Path
 import glob
+import re
 from zarr.codecs import BloscCodec
 import xarray as xr
 
@@ -9,12 +10,33 @@ def era_get_files(path, var, start_year=1979, end_year=2025):
     files = (
         Path(path) / var
     ).glob("*/*.nc")
-
+    
     return sorted(
         f for f in files
         if f.parent.name.isdigit()
         and start_year <= int(f.parent.name) <= end_year
     )
+
+def era_1deg_get_files(path, var, start_year=1979, end_year=2025):
+    """Return regridded ERA5 files for years from start_year to end_year, inclusive."""
+
+    root = Path(path) / var
+    print(root)
+
+    files = []
+
+    for file in root.glob("*.nc"):
+        years = re.findall(r"(?<!\d)(?:19|20)\d{2}(?!\d)", file.name)
+
+        if not years:
+            continue
+
+        year = int(years[-1])
+
+        if start_year <= year <= end_year:
+            files.append(file)
+
+    return sorted(files)
 
 def barra_get_files(path, var, start=197901, end=202512):
     """ Return files between start and end month """

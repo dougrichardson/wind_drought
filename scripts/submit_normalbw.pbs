@@ -6,7 +6,7 @@
 #PBS -l mem=18GB
 #PBS -l jobfs=20GB
 #PBS -l walltime=03:00:00
-#PBS -l storage=gdata/w42+gdata/ng72+gdata/xp65+gdata/gb02+gdata/rt52+gdata/ob53
+#PBS -l storage=gdata/w42+gdata/ng72+gdata/xp65+gdata/gb02+gdata/rt52+gdata/ob53+gdata/if69
 #PBS -l wd
 #PBS -o /dev/null
 #PBS -e /dev/null
@@ -17,28 +17,21 @@ cd /g/data/w42/dr6273/work/wind_drought
 
 export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
-# Keep a separate pair of logs for each job.
 mkdir -p logs
 exec > "logs/${PBS_JOBID}.out" 2> "logs/${PBS_JOBID}.err"
 
-# Load the Python version used to create your environment.
 module use /g/data/xp65/public/modules
 module load conda/analysis3
 
 : "${PYTHON_SCRIPT:?Submit with -v PYTHON_SCRIPT=path/to/script.py}"
+: "${PYTHON_ARGS:?Submit with -v PYTHON_ARGS='arg1 arg2 ...'}"
+
 if [[ ! -f "$PYTHON_SCRIPT" ]]; then
     echo "Python script not found: $PYTHON_SCRIPT" >&2
     exit 1
 fi
 
-python_args=()
-
-if [[ -n "${FIRST_YEAR:-}" || -n "${LAST_YEAR:-}" ]]; then
-    : "${FIRST_YEAR:?Provide both FIRST_YEAR and LAST_YEAR}"
-    : "${LAST_YEAR:?Provide both FIRST_YEAR and LAST_YEAR}"
-    python_args=("$FIRST_YEAR" "$LAST_YEAR")
-fi
+# Convert the space-separated argument string into a Bash array
+read -r -a python_args <<< "$PYTHON_ARGS"
 
 python -u "$PYTHON_SCRIPT" "${python_args[@]}"
-
-# Submit with e.g.: qsub -v PYTHON_SCRIPT=scripts/era5_wind_speed_100m.py,FIRST_YEAR=1979,LAST_YEAR=2025 scripts/submit_normalbw.pbs

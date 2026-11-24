@@ -46,6 +46,6 @@ def map_leaves_pair(obj1, obj2, operation):
 
     return operation(obj1, obj2)
 
-def doy_anom(ds):
+def doy_anom(ds, clim=slice("1979", "2025")):
     """ Day of year anomalies """
-    return ds.groupby('time.dayofyear') - ds.groupby('time.dayofyear').mean()
+    return ds.groupby('time.dayofyear') - ds.sel(time=clim).groupby('time.dayofyear').mean()

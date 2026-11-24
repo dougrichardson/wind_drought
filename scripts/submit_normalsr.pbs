@@ -5,8 +5,8 @@
 #PBS -l ncpus=104
 #PBS -l mem=496GB
 #PBS -l jobfs=300GB
-#PBS -l walltime=03:00:00
-#PBS -l storage=gdata/w42+gdata/ng72+gdata/xp65+gdata/gb02+gdata/rt52+gdata/ob53
+#PBS -l walltime=00:20:00
+#PBS -l storage=gdata/w42+gdata/ng72+gdata/xp65+gdata/gb02+gdata/rt52+gdata/ob53+gdata/if69
 #PBS -l wd
 #PBS -o /dev/null
 #PBS -e /dev/null
@@ -17,11 +17,9 @@ cd /g/data/w42/dr6273/work/wind_drought
 
 export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
-# Keep a separate pair of logs for each job.
 mkdir -p logs
 exec > "logs/${PBS_JOBID}.out" 2> "logs/${PBS_JOBID}.err"
 
-# Load the Python version used to create your environment.
 module use /g/data/xp65/public/modules
 module load conda/analysis3
 
@@ -29,32 +27,38 @@ module use /g/data/gb02/public/modules/
 module load dask_setup
 
 : "${PYTHON_SCRIPT:?Submit with -v PYTHON_SCRIPT=path/to/script.py}"
+: "${PYTHON_ARGS:?Submit with -v PYTHON_ARGS='arg1 arg2 ...'}"
+
 if [[ ! -f "$PYTHON_SCRIPT" ]]; then
     echo "Python script not found: $PYTHON_SCRIPT" >&2
     exit 1
 fi
 
-: "${FIRST_YEAR:?Submit with -v FIRST_YEAR=...,LAST_YEAR=...}"
-: "${LAST_YEAR:?Submit with -v FIRST_YEAR=...,LAST_YEAR=...}"
+# Convert the space-separated argument string into a Bash array
+read -r -a python_args <<< "$PYTHON_ARGS"
 
-python_args=("$FIRST_YEAR" "$LAST_YEAR")
+# Simple python run:
+# python -u "$PYTHON_SCRIPT" "${python_args[@]}"
 
-if [[ -n "${ARG3:-}" ]]; then
-    python_args+=("$ARG3")
+# Alternative - produce additional error file focussing on python errors for simpler debugging
+set +e
+
+python -u "$PYTHON_SCRIPT" "${python_args[@]}" \
+    > "logs/${PBS_JOBID}.out" \
+    2> "logs/${PBS_JOBID}.err"
+
+status=$?
+
+if [[ $status -ne 0 ]]; then
+    {
+        echo "Job failed with exit status: $status"
+        echo
+        echo "Relevant errors:"
+        grep -E -A 12 -B 2 \
+            "Traceback|KeyError|ValueError|TypeError|RuntimeError|MemoryError|PermissionError|No such file|Killed" \
+            "logs/${PBS_JOBID}.err" \
+            || true
+    } > "logs/${PBS_JOBID}.error_summary"
 fi
 
-if [[ -n "${ARG4:-}" ]]; then
-    if [[ -z "${ARG3:-}" ]]; then
-        echo "ARG4 requires ARG3" >&2
-        exit 1
-    fi
-    python_args+=("$ARG4")
-fi
-
-python -u "$PYTHON_SCRIPT" "${python_args[@]}"
-
-# Two arguments:
-# qsub -v PYTHON_SCRIPT=scripts/era5_wind_speed_100m.py,FIRST_YEAR=1979,LAST_YEAR=2025 scripts/submit_normalsr.pbs
-
-# Four arguments:
-# qsub -v PYTHON_SCRIPT=scripts/other_script.py,FIRST_YEAR=1979,LAST_YEAR=2025,ARG3=value3,ARG4=value4 scripts/submit_normalsr.pbs
+exit "$status"
